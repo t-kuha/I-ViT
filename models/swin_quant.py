@@ -1,17 +1,16 @@
-import math
-from tkinter import X
+from functools import partial
 from typing import Optional
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-from functools import partial
 
-from .layers_quant import PatchEmbed, Mlp, DropPath, trunc_normal_, to_2tuple
-from .quantization_utils import QuantLinear, QuantAct, QuantConv2d, IntLayerNorm, IntSoftmax, IntGELU, QuantMatMul
+from .layers_quant import DropPath, Mlp, PatchEmbed, to_2tuple, trunc_normal_
+from .quantization_utils import (IntGELU, IntLayerNorm, IntSoftmax, QuantAct,
+                                 QuantLinear, QuantMatMul)
 
 __all__ = ['swin_tiny_patch4_window7_224',
-           'swin_small_patch4_window7_224', 
+           'swin_small_patch4_window7_224',
            'swin_base_patch4_window7_224']
 
 
@@ -108,12 +107,10 @@ class WindowAttention(nn.Module):
         self.log_int_softmax = IntSoftmax()
         self.qact3 = QuantAct()
         self.qact4 = QuantAct(16)
-        # self.proj = nn.Linear(dim, dim)
-        self.proj = QuantLinear(dim,dim)
+        self.proj = QuantLinear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
         trunc_normal_(self.relative_position_bias_table, std=.02)
-        #self.softmax = nn.Softmax(dim=-1)
 
         self.matmul_1 = QuantMatMul()
         self.matmul_2 = QuantMatMul()
@@ -126,9 +123,8 @@ class WindowAttention(nn.Module):
         """
         B_, N, C = x.shape
         x, act_scaling_factor = self.qkv(x, act_scaling_factor)
-        x, act_scaling_factor_1= self.qact1(x, act_scaling_factor)
-        qkv = x.reshape(B_, N, 3, self.num_heads, C //
-                        self.num_heads).permute(2, 0, 3, 1, 4)
+        x, act_scaling_factor_1 = self.qact1(x, act_scaling_factor)
+        qkv = x.reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         # make torchscript happy (cannot use tensor as tuple)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
@@ -138,7 +134,7 @@ class WindowAttention(nn.Module):
         act_scaling_factor = act_scaling_factor * self.scale
 
         attn, act_scaling_factor = self.qact_attn1(attn, act_scaling_factor)
-        
+
         relative_position_bias_table_q, act_scaling_factor_tabel = self.qact_table(
             self.relative_position_bias_table)
         relative_position_bias = relative_position_bias_table_q[self.relative_position_index.view(-1)].view(
@@ -215,9 +211,9 @@ class SwinTransformerBlock(nn.Module):
         self.norm2 = norm_layer(dim)
         self.qact3 = QuantAct()
         mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, 
-                       hidden_features=mlp_hidden_dim, 
-                       act_layer=act_layer, 
+        self.mlp = Mlp(in_features=dim,
+                       hidden_features=mlp_hidden_dim,
+                       act_layer=act_layer,
                        drop=drop)
         self.qact4 = QuantAct(16)
         if self.shift_size > 0:
@@ -535,7 +531,6 @@ class SwinTransformer(nn.Module):
     def no_weight_decay_keywords(self):
         return {'relative_position_bias_table'}
 
-
     def forward_features(self, x):
         x, act_scaling_factor = self.qact_input(x)
         x, act_scaling_factor = self.patch_embed(x, act_scaling_factor)
@@ -560,7 +555,6 @@ class SwinTransformer(nn.Module):
     def forward(self, x):
         x, act_scaling_factor = self.forward_features(x)
         x, act_scaling_factor = self.head(x, act_scaling_factor)
-        #x, _ = self.act_out(x, act_scaling_factor)
         return x
 
 

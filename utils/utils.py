@@ -4,11 +4,11 @@
 Misc functions, including distributed helpers.
 Mostly copy-paste from torchvision references.
 """
+import datetime
 import io
 import os
 import time
 from collections import defaultdict, deque
-import datetime
 
 import torch
 import torch.distributed as dist

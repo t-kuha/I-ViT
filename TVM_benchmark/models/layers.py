@@ -1,17 +1,17 @@
 """Simple Layer DSL wrapper to ease creation of neural nets."""
-from dataclasses import dataclass
-from tvm import relay
 from collections import namedtuple
+from dataclasses import dataclass
 
 import numpy as np
+from tvm import relay
 from tvm.relay.op.tensor import exp
-
 
 QConfig = namedtuple('QConfig', 'from_dtype, from_scale, from_zero_point, \
                                 input_dtype, input_scale, input_zero_point, \
                                 kernel_dtype, kernel_scale, kernel_zero_point, \
                                 output_dtype, output_scale, output_zero_point',
                       defaults=('int32', 65.0, 0.0, 'int8', 8.0, 0.0, 'int8', 8.0, 0.0, 'int32', 74.0, 0.0))
+
 
 class QuantizeContext(object):
     qconfig_dict = dict()
@@ -26,8 +26,8 @@ class QuantizeContext(object):
     def set_default_qconfig(qconfig):
         QuantizeContext.default_qconfig = qconfig
 
+
 def get_qconfig(name):
-    #print(QuantizeContext.qconfig_dict)
     if name in QuantizeContext.qconfig_dict:
         return QuantizeContext.qconfig_dict[name]
     else:
@@ -307,7 +307,7 @@ def quantized_matmul(x, y,
                      x_zero_point=0.0,
                      y_zero_point=0.0):
     x_zero_point = relay.const(x_zero_point, 'int32')
-    y_zero_point = relay.const(y_zero_point, 'int32')     
+    y_zero_point = relay.const(y_zero_point, 'int32')
     if isinstance(input_scale1, float):
         x_scale = relay.const(input_scale1, 'float32')
     else:
@@ -317,17 +317,16 @@ def quantized_matmul(x, y,
     else:
         y_scale = relay.const(input_scale2.astype('float32'), 'float32')
 
-    matmul = relay.qnn.op.batch_matmul(x, y, 
-                                       x_zero_point, 
-                                       y_zero_point, 
-                                       x_scale, 
-                                       y_scale, 
+    matmul = relay.qnn.op.batch_matmul(x, y,
+                                       x_zero_point,
+                                       y_zero_point,
+                                       x_scale,
+                                       y_scale,
                                        out_dtype="int32")
-    return matmul 
+    return matmul
 
 
-def quantized_layernorm(data, 
-                        bias_int):
+def quantized_layernorm(data, bias_int):
     mean = relay.mean(data, axis=2, keepdims=True)
     data = data - mean
 
@@ -339,12 +338,12 @@ def quantized_layernorm(data,
 
     std = relay.const(2 ** 16, 'uint32')
     for _ in range(10):
-        tmp = (std + var/std)/relay.const(2, 'uint32')
+        tmp = (std + var / std) / relay.const(2, 'uint32')
         std = tmp
     std = relay.cast(std, 'int32')
 
-    factor = relay.const(2**31-1, 'int32')
-    data =  (factor / std) * data / relay.const(2, 'int32')
+    factor = relay.const(2**31 - 1, 'int32')
+    data = (factor / std) * data / relay.const(2, 'int32')
     data = data + bias_int
 
     return data
@@ -354,19 +353,18 @@ def shift_exp(data, input_scale, n):
 
     data = data + relay.right_shift(data, relay.const(1, dtype='int32')) - relay.right_shift(data, relay.const(4, dtype='int32'))
 
-    x0 = relay.const(-1.0/input_scale-1, 'int32')
+    x0 = relay.const(-1.0 / input_scale - 1, 'int32')
     n = relay.const(n, dtype='int32')
 
-    data = relay.maximum(data, n*x0)
+    data = relay.maximum(data, n * x0)
 
     q = data / x0
     r = data - q * x0
 
     exp_int = relay.right_shift(r, relay.const(1, dtype='int32')) - x0
-    exp_int = relay.left_shift(exp_int, n-q)
+    exp_int = relay.left_shift(exp_int, n - q)
 
     return exp_int
-
 
 
 def quantized_softmax(data, input_scale):
@@ -377,9 +375,9 @@ def quantized_softmax(data, input_scale):
     exp_int = shift_exp(data, input_scale, 16)
 
     exp_int_sum = relay.sum(exp_int, axis=-1, keepdims=True)
-    factor = relay.const(2**31-1, 'int32')
+    factor = relay.const(2**31 - 1, 'int32')
     # exp_int = (factor/exp_int_sum) * exp_int / relay.const(2 ** 24, 'int32')
-    exp_int = relay.right_shift((factor/exp_int_sum) * exp_int, relay.const(24, dtype='int32'))
+    exp_int = relay.right_shift((factor / exp_int_sum) * exp_int, relay.const(24, dtype='int32'))
 
     exp_int = relay.cast(exp_int, 'int8')
 
@@ -391,13 +389,13 @@ def quantized_gelu(pre_data, input_scale):
     data_max = relay.max(pre_data, axis=-1, keepdims=True)
     data = pre_data - data_max
 
-    exp_int = shift_exp(data, input_scale* 1.702, 23)
-    exp_int_max = shift_exp(-data_max, input_scale* 1.702, 23)
+    exp_int = shift_exp(data, input_scale * 1.702, 23)
+    exp_int_max = shift_exp(-data_max, input_scale * 1.702, 23)
     exp_int_sum = exp_int + exp_int_max
 
-    factor = relay.const(2**31-1, 'int32')
+    factor = relay.const(2**31 - 1, 'int32')
     # sigmoid_int = (factor/exp_int_sum) * exp_int / relay.const(2 ** 24, 'int32')
-    sigmoid_int = relay.right_shift((factor/exp_int_sum) * exp_int, relay.const(24, dtype='int32'))
+    sigmoid_int = relay.right_shift((factor / exp_int_sum) * exp_int, relay.const(24, dtype='int32'))
 
     gelu = pre_data * sigmoid_int
 

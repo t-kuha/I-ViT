@@ -1,8 +1,8 @@
 """Initializer of parameters."""
 import numpy as np
-
 import tvm
 from tvm import relay
+
 
 class Initializer(object):
     """The base class of an initializer."""
@@ -64,10 +64,11 @@ class Initializer(object):
 
     def _init_default(self, name, _):
         raise ValueError(
-            'Unknown initialization pattern for %s. ' \
-            'Default initialization is now limited to '\
-            '"weight", "bias", "gamma" (1.0), and "beta" (0.0).' \
+            'Unknown initialization pattern for %s. '
+            'Default initialization is now limited to '
+            '"weight", "bias", "gamma" (1.0), and "beta" (0.0).'
             'Please use mx.sym.Variable(init=mx.init.*) to set initialization pattern' % name)
+
 
 class Xavier(Initializer):
     """ "Xavier" initialization for weights
@@ -115,6 +116,7 @@ class Xavier(Initializer):
         else:
             raise ValueError("Unknown random type")
 
+
 class QuantizeInitializer(Initializer):
     def _init_weight(self, name, arr):
         if arr.dtype == np.float32:
@@ -142,6 +144,7 @@ class QuantizeInitializer(Initializer):
     def _init_shift(self, _, arr):
         arr[:] = np.random.randint(-256, 256, size=arr.shape)
 
+
 def create_workload(net, initializer=None, seed=0):
     """Helper function to create benchmark image classification workload.
     Parameters
@@ -162,7 +165,7 @@ def create_workload(net, initializer=None, seed=0):
     mod = tvm.IRModule.from_expr(net)
     mod = relay.transform.InferType()(mod)
     shape_dict = {
-        v.name_hint : v.checked_type for v in mod["main"].params}
+        v.name_hint: v.checked_type for v in mod["main"].params}
     np.random.seed(seed)
     initializer = initializer if initializer else Xavier()
     params = {}
@@ -178,6 +181,6 @@ def create_workload(net, initializer=None, seed=0):
             init_value = np.zeros(v.concrete_shape).astype(v.dtype)
 
         initializer(k, init_value)
-        params[k] = tvm.nd.array(init_value) #, ctx=tvm.cpu(0)
+        params[k] = tvm.nd.array(init_value)
 
     return mod, params

@@ -1,19 +1,16 @@
 import argparse
+
+import convert_model
+import numpy as np
 import torch
 import tvm
-from tvm import relay
-from tvm import target
-from tvm.contrib.download import download_testdata
-
-from torchvision import transforms
 from PIL import Image
-import numpy as np
+from torchvision import transforms
+from tvm import relay, target
+from tvm.contrib.download import download_testdata
 
 import models.build_model as build_model
 from models.layers import QuantizeContext
-
-import convert_model
-
 
 parser = argparse.ArgumentParser(description="TVM-Accuracy")
 
@@ -63,7 +60,6 @@ def main():
     # Load model
     name = args.model_name
     batch_size = 1
-    shape = list(input_image.shape)
     image_shape = (3, 224, 224)
     data_layout = "NCHW"
     kernel_layout = "OIHW"

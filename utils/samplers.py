@@ -1,8 +1,9 @@
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
+import math
+
 import torch
 import torch.distributed as dist
-import math
 
 
 class RASampler(torch.utils.data.Sampler):
@@ -56,7 +57,6 @@ class RASampler(torch.utils.data.Sampler):
         assert len(indices) == self.num_samples
 
         return iter(indices[:self.num_selected_samples])
-        #return iter(indices)
 
     def __len__(self):
         return self.num_selected_samples

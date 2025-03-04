@@ -1,20 +1,13 @@
-import os
-import math
-import re
-import warnings
-from itertools import repeat
-import collections.abc
 from collections import OrderedDict
 from functools import partial
 
 import torch
-import torch.nn.functional as F
 from torch import nn
 
-from .layers_quant import PatchEmbed, Mlp, DropPath, trunc_normal_
-from .quantization_utils import QuantLinear, QuantAct, QuantConv2d, IntLayerNorm, IntSoftmax, IntGELU, QuantMatMul
+from .layers_quant import DropPath, Mlp, PatchEmbed, trunc_normal_
+from .quantization_utils import (IntGELU, IntLayerNorm, IntSoftmax, QuantAct,
+                                 QuantLinear, QuantMatMul)
 from .utils import load_weights_from_npz
-
 
 __all__ = ['deit_tiny_patch16_224', 'deit_small_patch16_224', 'deit_base_patch16_224',
            'vit_base_patch16_224', 'vit_large_patch16_224']
@@ -60,8 +53,7 @@ class Attention(nn.Module):
         B, N, C = x.shape
         x, act_scaling_factor = self.qkv(x, act_scaling_factor)
         x, act_scaling_factor_1 = self.qact1(x, act_scaling_factor)
-        qkv = x.reshape(B, N, 3, self.num_heads, C //
-                        self.num_heads).permute(2, 0, 3, 1, 4)  # (BN33)
+        qkv = x.reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)  # (BN33)
         q, k, v = (
             qkv[0],
             qkv[1],
@@ -278,7 +270,6 @@ class VisionTransformer(nn.Module):
     def forward(self, x):
         x, act_scaling_factor = self.forward_features(x)
         x, act_scaling_factor = self.head(x, act_scaling_factor)
-        #x, _ = self.act_out(x, act_scaling_factor)
         return x
 
 

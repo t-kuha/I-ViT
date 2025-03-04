@@ -1,4 +1,5 @@
 import torch.nn as nn
+
 from .quantization_utils import *
 
 
@@ -8,10 +9,10 @@ def freeze_model(model):
     """
     if type(model) in [QuantAct]:
         model.fix()
-    elif type(model) == nn.Sequential:
+    elif isinstance(model, nn.Sequential):
         for n, m in model.named_children():
             freeze_model(m)
-    elif type(model) == nn.ModuleList:
+    elif isinstance(model, nn.ModuleList):
         for n in model:
             freeze_model(n)
     else:
@@ -27,10 +28,10 @@ def unfreeze_model(model):
     """
     if type(model) in [QuantAct]:
         model.unfix()
-    elif type(model) == nn.Sequential:
+    elif isinstance(model, nn.Sequential):
         for n, m in model.named_children():
             unfreeze_model(m)
-    elif type(model) == nn.ModuleList:
+    elif isinstance(model, nn.ModuleList):
         for n in model:
             unfreeze_model(n)
     else:
@@ -38,4 +39,3 @@ def unfreeze_model(model):
             mod = getattr(model, attr)
             if isinstance(mod, nn.Module):
                 unfreeze_model(mod)
-

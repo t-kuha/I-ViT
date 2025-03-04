@@ -1,1 +1,2 @@
-from .quant_modules import QuantLinear, QuantAct, QuantConv2d, QuantMatMul, IntLayerNorm, IntSoftmax, IntGELU
+from .quant_modules import (IntGELU, IntLayerNorm, IntSoftmax, QuantAct,
+                            QuantConv2d, QuantLinear, QuantMatMul)

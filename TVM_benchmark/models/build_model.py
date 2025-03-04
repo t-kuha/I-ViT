@@ -1,5 +1,5 @@
 from .quantized_vit import Q_VisionTransformer
-from .utils import create_workload, QuantizeInitializer
+from .utils import QuantizeInitializer, create_workload
 
 
 def get_deit(name,
@@ -9,7 +9,6 @@ def get_deit(name,
             data_layout="NCHW",
             kernel_layout="OIHW",
             debug_unit=None):
-
 
     if data_layout == 'NCHW':
         data_shape = (batch_size,) + image_shape
@@ -22,7 +21,6 @@ def get_deit(name,
     else:
         raise RuntimeError("Unsupported data layout {}".format(data_layout))
 
-
     if name == 'deit_tiny_patch16_224':
         embed_dim = 192
         num_heads = 3
@@ -34,7 +32,6 @@ def get_deit(name,
         num_heads = 12
     else:
         raise RuntimeError("Unsupported model {}".format(name))
-    
 
     return Q_VisionTransformer(data_shape=data_shape,
                             dtype=dtype,
@@ -55,7 +52,7 @@ def get_workload(name,
                  data_layout="NCHW",
                  kernel_layout="OIHW",
                  debug_unit=None):
-    
+
     if batch_size != 1:
         raise RuntimeError("The released project only supports batch_size = 1.")
 

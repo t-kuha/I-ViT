@@ -1,9 +1,10 @@
-import torch
 import time
+
 import numpy as np
+import torch
+import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.multiprocessing as mp
 from torch.nn import Parameter
 
 from .quant_utils import *
@@ -213,7 +214,7 @@ class QuantMatMul(nn.Module):
     def __init__(self):
         super(QuantMatMul, self).__init__()
         self.register_buffer('act_scaling_factor', torch.zeros(1))
-    
+
     def fix(self):
         pass
 
@@ -335,8 +336,8 @@ class IntLayerNorm(nn.LayerNorm):
     Implementation of I-LayerNorm
     Class to quantize given LayerNorm layer
     """
-    def __init__(self, 
-                normalized_shape, 
+    def __init__(self,
+                normalized_shape,
                 eps=1e-5,
                 elementwise_affine=True):
         super(IntLayerNorm, self).__init__(normalized_shape, eps, elementwise_affine)
@@ -365,11 +366,11 @@ class IntLayerNorm(nn.LayerNorm):
         # Integer Iteration
         k = 2 ** 16
         for _ in range(10):
-            k_1 = floor_ste.apply((k + floor_ste.apply(var_int/k))/2)
+            k_1 = floor_ste.apply((k + floor_ste.apply(var_int / k)) / 2)
             k = k_1
         std_int = k
 
-        factor = floor_ste.apply((2 ** 31-1) / std_int)
+        factor = floor_ste.apply((2 ** 31 - 1) / std_int)
         y_int = floor_ste.apply(y_int * factor / 2)
         scaling_factor = self.dim_sqrt / 2 ** 30
 
@@ -397,7 +398,7 @@ class IntGELU(nn.Module):
         self.output_bit = output_bit
 
         self.n = 23  # sufficiently large integer
-        #The minimum value for ensuring accuracy (varies depending on models)
+        # The minimum value for ensuring accuracy (varies depending on models)
 
         self.register_buffer('act_scaling_factor', torch.zeros(1))
 
@@ -416,7 +417,7 @@ class IntGELU(nn.Module):
 
         q = floor_ste.apply(x_int / x0_int)
         r = x_int - x0_int * q
-        exp_int = r/2 - x0_int
+        exp_int = r / 2 - x0_int
         exp_int = torch.clamp(floor_ste.apply(exp_int * 2 ** (self.n - q)), min=0)
         scaling_factor = scaling_factor / 2 ** self.n
 
@@ -429,15 +430,15 @@ class IntGELU(nn.Module):
         x_int_max, _ = pre_x_int.max(dim=-1, keepdim=True)
         x_int = pre_x_int - x_int_max
 
-        exp_int, _ = self.int_exp_shift(x_int, scaling_factor_sig) # e^(x-x_max)
+        exp_int, _ = self.int_exp_shift(x_int, scaling_factor_sig)  # e^(x-x_max)
 
         exp_int_max, _ = self.int_exp_shift(-x_int_max, scaling_factor_sig)  # e^(-x_max)
         exp_int_sum = exp_int + exp_int_max
 
-        exp_int_sum.clamp_max_(2**31-1)
-        factor = floor_ste.apply((2 ** 31-1) / exp_int_sum)
-        sigmoid_int = floor_ste.apply(exp_int * factor / 2 ** (31-self.output_bit+1))
-        sigmoid_scaling_factor = torch.Tensor([1 / 2 ** (self.output_bit-1)]).cuda()
+        exp_int_sum.clamp_max_(2**31 - 1)
+        factor = floor_ste.apply((2 ** 31 - 1) / exp_int_sum)
+        sigmoid_int = floor_ste.apply(exp_int * factor / 2 ** (31 - self.output_bit + 1))
+        sigmoid_scaling_factor = torch.Tensor([1 / 2 ** (self.output_bit - 1)]).cuda()
 
         x_int = pre_x_int * sigmoid_int
         scaling_factor = scaling_factor * sigmoid_scaling_factor
@@ -456,7 +457,7 @@ class IntSoftmax(nn.Module):
         self.output_bit = output_bit
 
         self.n = 15  # sufficiently large integer
-        #The minimum value for ensuring accuracy (varies depending on models)
+        # The minimum value for ensuring accuracy (varies depending on models)
 
         self.register_buffer('act_scaling_factor', torch.zeros(1))
 
@@ -475,7 +476,7 @@ class IntSoftmax(nn.Module):
 
         q = floor_ste.apply(x_int / x0_int)
         r = x_int - x0_int * q
-        exp_int = r/2 - x0_int
+        exp_int = r / 2 - x0_int
         exp_int = torch.clamp(floor_ste.apply(exp_int * 2 ** (self.n - q)), min=0)
         scaling_factor = scaling_factor / 2 ** self.n
         return exp_int, scaling_factor
@@ -488,10 +489,10 @@ class IntSoftmax(nn.Module):
         exp_int, _ = self.int_exp_shift(x_int, scaling_factor)
         exp_int_sum = exp_int.sum(dim=-1, keepdim=True)
 
-        exp_int_sum.clamp_max_(2**31-1)
-        factor = floor_ste.apply((2**31-1) / exp_int_sum)
-        exp_int = floor_ste.apply(exp_int * factor / 2 ** (31-self.output_bit+1))
-        scaling_factor = torch.Tensor([1 / 2 ** (self.output_bit-1)]).cuda()
+        exp_int_sum.clamp_max_(2**31 - 1)
+        factor = floor_ste.apply((2**31 - 1) / exp_int_sum)
+        exp_int = floor_ste.apply(exp_int * factor / 2 ** (31 - self.output_bit + 1))
+        scaling_factor = torch.Tensor([1 / 2 ** (self.output_bit - 1)]).cuda()
 
         self.act_scaling_factor = scaling_factor
         return exp_int * scaling_factor, scaling_factor

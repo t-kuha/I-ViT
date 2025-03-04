@@ -1,13 +1,13 @@
+import collections.abc
 import math
 import warnings
 from itertools import repeat
-import collections.abc
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
-from .quantization_utils import QuantLinear, QuantAct, QuantConv2d, IntGELU
+from .quantization_utils import IntGELU, QuantAct, QuantConv2d, QuantLinear
 
 
 def _ntuple(n):
@@ -180,7 +180,6 @@ class PatchEmbed(nn.Module):
             self.norm = norm_layer(embed_dim)
         self.qact = QuantAct(16)
 
-
     def forward(self, x, act_scaling_factor):
         B, C, H, W = x.shape
         # FIXME look at relaxing size constraints
@@ -194,4 +193,3 @@ class PatchEmbed(nn.Module):
             x, act_scaling_factor = self.norm(x, act_scaling_factor)
         x, act_scaling_factor = self.qact(x, act_scaling_factor)
         return x, act_scaling_factor
-

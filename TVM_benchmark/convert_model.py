@@ -1,16 +1,16 @@
-from curses.ascii import isascii
-from pytest import param
-import torch
-import numpy as np
 import argparse
-
 import os
+from curses.ascii import isascii
+
+import numpy as np
+import torch
+from pytest import param
 
 from models.layers import QConfig, QuantizeContext
 
 
 def save_params(model, depth, save_path):
-    ## weight and bias (conv and dense)
+    # weight and bias (conv and dense)
     params = {}
     for (key, tensor) in model.items():
         if 'weight_integer' in key:
@@ -45,7 +45,7 @@ def save_params(model, depth, save_path):
     renamed_params['head_weight'] = params['head.weight_integer']
     renamed_params['head_bias'] = params['head.bias_integer']
 
-    ## norm
+    # norm
     for i in range(depth):
         for key in ['bias_integer']:
             old_name = 'blocks.%d.norm1.' % (i) + key
@@ -58,8 +58,7 @@ def save_params(model, depth, save_path):
 
     renamed_params['norm_bias'] = model['norm.bias_integer'].cpu().numpy().astype('int32')
 
-
-    ## other params
+    # other params
     renamed_params['cls_token_weight'] = model['cls_token'].cpu().numpy()
     renamed_params['pos_embed_weight'] = model['pos_embed'].cpu().numpy()
 
@@ -70,7 +69,6 @@ def load_qconfig(model, depth):
     params = {}
     for (key, tensor) in model.items():
         if 'scaling_factor' in key:
-            #print(key)
             tensor_np = tensor.cpu().numpy().reshape((-1))
             params[key] = tensor_np
         if "act_scaling_factor" in key and np.ndim(tensor_np) == 1:
@@ -79,7 +77,7 @@ def load_qconfig(model, depth):
 
     QuantizeContext.qconfig_dict['qconfig_pos'] = QConfig(output_scale=params['qact_pos.act_scaling_factor'])
     QuantizeContext.qconfig_dict['qconfig_addpos'] = QConfig(input_scale=params['patch_embed.qact.act_scaling_factor'], input_dtype='int16', output_scale=params['qact1.act_scaling_factor'])
-    ## Embed
+    # Embed
     conv_input_scale = params['qact_input.act_scaling_factor']
     conv_kernel_scale = params['patch_embed.proj.conv_scaling_factor']
     conv_output_scale = conv_input_scale * conv_kernel_scale
@@ -87,7 +85,7 @@ def load_qconfig(model, depth):
             QConfig(input_scale=conv_input_scale, kernel_scale=conv_kernel_scale, output_scale=conv_output_scale)
 
     for i in range(depth):
-        input_scale = params['qact1.act_scaling_factor'] if i == 0 else params['blocks.%d.qact4.act_scaling_factor' % (i-1)]
+        input_scale = params['qact1.act_scaling_factor'] if i == 0 else params['blocks.%d.qact4.act_scaling_factor' % (i - 1)]
         output_scale = params['blocks.%d.norm1.norm_scaling_factor' % (i)]
         QuantizeContext.qconfig_dict['block_%d_qconfig_norm1' % (i)] = QConfig(input_scale=input_scale, output_scale=output_scale)
 
@@ -115,7 +113,7 @@ def load_qconfig(model, depth):
 
         input_scale = params['blocks.%d.attn.qact3.act_scaling_factor' % (i)]
         output_scale = params['blocks.%d.qact2.act_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_add1' % (i)] = QConfig(input_scale=input_scale, input_dtype='int16', output_scale=output_scale) 
+        QuantizeContext.qconfig_dict['block_%d_qconfig_add1' % (i)] = QConfig(input_scale=input_scale, input_dtype='int16', output_scale=output_scale)
 
         input_scale = params['blocks.%d.qact2.act_scaling_factor' % (i)]
         output_scale = params['blocks.%d.norm2.norm_scaling_factor' % (i)]
@@ -161,5 +159,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     model = torch.load(args.model_path)
     # print(model.keys())
-    
+
     save_params(model, args.depth, args.params_path)

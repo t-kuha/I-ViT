@@ -1,12 +1,9 @@
-import math
-import numpy as np
-from torch.autograd import Function, Variable
-import torch
-import bisect
-from fractions import Fraction
 import decimal
 from decimal import Decimal
-import time
+
+import numpy as np
+import torch
+from torch.autograd import Function
 
 
 def linear_quantize(input, scale, zero_point, is_weight):
@@ -89,7 +86,7 @@ class SymmetricQuantFunction(Function):
 
         n = 2 ** (k - 1) - 1
         new_quant_x = linear_quantize(x, scale, zero_point, is_weight=is_weight)
-        new_quant_x = torch.clamp(new_quant_x, -n-1, n)
+        new_quant_x = torch.clamp(new_quant_x, -n - 1, n)
 
         ctx.scale = scale
         ctx.is_weight = is_weight
@@ -246,7 +243,7 @@ class fixedpoint_mul(Function):
 
             if bit_num in [4, 8, 16, 32]:
                 if quant_mode == 'symmetric':
-                    return torch.clamp(output.type(torch.float), -n-1, n)
+                    return torch.clamp(output.type(torch.float), -n - 1, n)
                 else:
                     return torch.clamp(output.type(torch.float), 0, n)
             else:

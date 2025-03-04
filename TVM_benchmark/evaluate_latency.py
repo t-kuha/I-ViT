@@ -1,16 +1,14 @@
 import argparse
-import numpy as np
-
-import tvm
-from tvm import relay, auto_scheduler
-import tvm.relay.testing
-from tvm.contrib import graph_executor
-
-import models.build_model as build_model
-
 import os
 from pathlib import Path
 
+import numpy as np
+import tvm
+import tvm.relay.testing
+from tvm import auto_scheduler, relay
+from tvm.contrib import graph_executor
+
+import models.build_model as build_model
 
 parser = argparse.ArgumentParser(description="TVM-Speed")
 
@@ -39,7 +37,6 @@ def main():
     batch_size = 1
     image_shape = (3, 224, 224)
     input_shape = (batch_size, 3, 224, 224)
-    output_shape = (batch_size, 1000)
     data_layout = "NCHW"
     kernel_layout = "OIHW"
 
@@ -64,7 +61,7 @@ def main():
 
     tuner = auto_scheduler.TaskScheduler(tasks, task_weights)
     tune_option = auto_scheduler.TuningOptions(
-        num_measure_trials=50000, 
+        num_measure_trials=50000,
         runner=measure_ctx.runner,
         measure_callbacks=[auto_scheduler.RecordToFile(log_file)],
     )

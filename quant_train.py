@@ -1,29 +1,24 @@
 import argparse
+import logging
 import os
 import time
-import math
-import logging
-import numpy as np
 
+import numpy as np
 import torch
 import torch.nn as nn
-from pathlib import Path
-
 from timm.data import Mixup
-from timm.models import create_model
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
-from timm.scheduler import create_scheduler
 from timm.optim import create_optimizer
-from timm.utils import NativeScaler, get_state_dict, ModelEma, accuracy
+from timm.scheduler import create_scheduler
+from timm.utils import ModelEma, NativeScaler, accuracy
 
 from models import *
 from utils import *
 
-
 parser = argparse.ArgumentParser(description="I-ViT")
 
 parser.add_argument("--model", default='deit_tiny',
-                    choices=['deit_tiny', 'deit_small', 'deit_base', 
+                    choices=['deit_tiny', 'deit_small', 'deit_base',
                              'swin_tiny', 'swin_small', 'swin_base'],
                     help="model")
 parser.add_argument('--data', metavar='DIR', default='/dataset/imagenet/',
@@ -198,7 +193,7 @@ def main():
             decay=args.model_ema_decay,
             device='cpu' if args.model_ema_force_cpu else '',
             resume='')
-        
+
     args.min_lr = args.lr / 15
     optimizer = create_optimizer(args, model)
     loss_scaler = NativeScaler()
@@ -391,7 +386,6 @@ class ProgressMeter(object):
         num_digits = len(str(num_batches // 1))
         fmt = '{:' + str(num_digits) + 'd}'
         return '[' + fmt + '/' + fmt.format(num_batches) + ']'
-
 
 
 if __name__ == "__main__":

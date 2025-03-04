@@ -1,14 +1,9 @@
 import os
+
 import torch
-
-from torchvision import datasets, transforms
-from torchvision.datasets.folder import ImageFolder, default_loader
-
-from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
-
-from .samplers import RASampler
-import utils
+from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from torchvision import datasets, transforms
 
 
 def dataloader(args):
@@ -47,11 +42,9 @@ def build_dataset(is_train, args):
 
     if args.data_set == 'CIFAR':
         dataset = datasets.CIFAR100(args.data_path, train=is_train, transform=transform)
-        nb_classes = 100
     elif args.data_set == 'IMNET':
         root = os.path.join(args.data, 'train' if is_train else 'val')
         dataset = datasets.ImageFolder(root, transform=transform)
-        nb_classes = 1000
     else:
         raise NotImplementedError
 
