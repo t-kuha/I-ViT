@@ -4,7 +4,6 @@ import warnings
 from itertools import repeat
 
 import torch
-import torch.nn.functional as F
 from torch import nn
 
 from .quantization_utils import IntGELU, QuantAct, QuantConv2d, QuantLinear

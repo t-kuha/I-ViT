@@ -1,13 +1,8 @@
-import time
-
-import numpy as np
 import torch
-import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Parameter
 
-from .quant_utils import *
+from .quant_utils import (fixedpoint_mul, floor_ste, round_ste, symmetric_linear_quantization_params, SymmetricQuantFunction)
 
 
 class QuantLinear(nn.Linear):
