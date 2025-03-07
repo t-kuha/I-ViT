@@ -12,8 +12,14 @@ from timm.optim import create_optimizer
 from timm.scheduler import create_scheduler
 from timm.utils import ModelEma, NativeScaler, accuracy
 
-from models import *
-from utils import *
+from models import (
+    deit_tiny_patch16_224, deit_small_patch16_224, deit_base_patch16_224,
+    # vit_base_patch16_224, vit_large_patch16_224,
+    swin_tiny_patch4_window7_224, swin_small_patch4_window7_224, swin_base_patch4_window7_224
+)
+from utils import (
+    dataloader, load_checkpoint_for_ema, freeze_model, unfreeze_model
+)
 
 parser = argparse.ArgumentParser(description="I-ViT")
 
