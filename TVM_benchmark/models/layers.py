@@ -1,10 +1,8 @@
 """Simple Layer DSL wrapper to ease creation of neural nets."""
 from collections import namedtuple
-from dataclasses import dataclass
 
 import numpy as np
 from tvm import relay
-from tvm.relay.op.tensor import exp
 
 QConfig = namedtuple('QConfig', 'from_dtype, from_scale, from_zero_point, \
                                 input_dtype, input_scale, input_zero_point, \

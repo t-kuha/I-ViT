@@ -1,4 +1,3 @@
-import tvm
 from tvm import relay
 
 from . import layers

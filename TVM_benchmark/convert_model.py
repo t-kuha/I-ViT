@@ -1,10 +1,8 @@
 import argparse
 import os
-from curses.ascii import isascii
 
 import numpy as np
 import torch
-from pytest import param
 
 from models.layers import QConfig, QuantizeContext
 
