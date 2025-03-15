@@ -15,10 +15,11 @@ from timm.utils import ModelEma, NativeScaler, accuracy
 from models import (
     deit_tiny_patch16_224, deit_small_patch16_224, deit_base_patch16_224,
     # vit_base_patch16_224, vit_large_patch16_224,
-    swin_tiny_patch4_window7_224, swin_small_patch4_window7_224, swin_base_patch4_window7_224
+    swin_tiny_patch4_window7_224, swin_small_patch4_window7_224, swin_base_patch4_window7_224,
+    freeze_model, unfreeze_model
 )
 from utils import (
-    dataloader, load_checkpoint_for_ema, freeze_model, unfreeze_model
+    dataloader, load_checkpoint_for_ema
 )
 
 parser = argparse.ArgumentParser(description="I-ViT")
