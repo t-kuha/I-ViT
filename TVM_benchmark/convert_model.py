@@ -24,20 +24,20 @@ def save_params(model, depth: int, save_path: str):
 
     for i in range(depth):
         for key in ['weight_integer', 'bias_integer']:
-            old_name = 'blocks.%d.attn.qkv.' % (i) + key
-            new_name = 'block_%d_attn_qkv_' % (i) + key[:-8]
+            old_name = f'blocks.{i}.attn.qkv.' + key
+            new_name = f'block_{i}_attn_qkv_' + key[:-8]
             renamed_params[new_name] = params[old_name]
 
-            old_name = 'blocks.%d.attn.proj.' % (i) + key
-            new_name = 'block_%d_attn_proj_' % (i) + key[:-8]
+            old_name = f'blocks.{i}.attn.proj.' + key
+            new_name = f'block_{i}_attn_proj_' + key[:-8]
             renamed_params[new_name] = params[old_name]
 
-            old_name = 'blocks.%d.mlp.fc1.' % (i) + key
-            new_name = 'block_%d_mlp_fc1_' % (i) + key[:-8]
+            old_name = f'blocks.{i}.mlp.fc1.' + key
+            new_name = f'block_{i}_mlp_fc1_' + key[:-8]
             renamed_params[new_name] = params[old_name]
 
-            old_name = 'blocks.%d.mlp.fc2.' % (i) + key
-            new_name = 'block_%d_mlp_fc2_' % (i) + key[:-8]
+            old_name = f'blocks.{i}.mlp.fc2.' + key
+            new_name = f'block_{i}_mlp_fc2_' + key[:-8]
             renamed_params[new_name] = params[old_name]
 
     renamed_params['head_weight'] = params['head.weight_integer']
@@ -46,12 +46,12 @@ def save_params(model, depth: int, save_path: str):
     # norm
     for i in range(depth):
         for key in ['bias_integer']:
-            old_name = 'blocks.%d.norm1.' % (i) + key
-            new_name = 'block_%d_norm1_' % (i) + key[:-8]
+            old_name = f'blocks.{i}.norm1.' + key
+            new_name = f'block_{i}_norm1_' + key[:-8]
             renamed_params[new_name] = model[old_name].cpu().numpy().astype('int32')
 
-            old_name = 'blocks.%d.norm2.' % (i) + key
-            new_name = 'block_%d_norm2_' % (i) + key[:-8]
+            old_name = f'blocks.{i}.norm2.' + key
+            new_name = f'block_{i}_norm2_' + key[:-8]
             renamed_params[new_name] = model[old_name].cpu().numpy().astype('int32')
 
     renamed_params['norm_bias'] = model['norm.bias_integer'].cpu().numpy().astype('int32')
@@ -84,57 +84,57 @@ def load_qconfig(model, depth):
             QConfig(input_scale=conv_input_scale, kernel_scale=conv_kernel_scale, output_scale=conv_output_scale)
 
     for i in range(depth):
-        input_scale = params['qact1.act_scaling_factor'] if i == 0 else params['blocks.%d.qact4.act_scaling_factor' % (i - 1)]
-        output_scale = params['blocks.%d.norm1.norm_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_norm1' % (i)] = QConfig(input_scale=input_scale, output_scale=output_scale)
+        input_scale = params['qact1.act_scaling_factor'] if i == 0 else params[f'blocks.{i - 1}.qact4.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.norm1.norm_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_norm1'] = QConfig(input_scale=input_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.qact1.act_scaling_factor' % (i)]
-        kernel_scale = params['blocks.%d.attn.qkv.fc_scaling_factor' % (i)]
+        input_scale = params[f'blocks.{i}.qact1.act_scaling_factor']
+        kernel_scale = params[f'blocks.{i}.attn.qkv.fc_scaling_factor']
         output_scale = input_scale * kernel_scale
-        QuantizeContext.qconfig_dict['block_%d_qconfig_qkv' % (i)] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_qkv'] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.attn.qact1.act_scaling_factor' % (i)]
-        output_scale = params['blocks.%d.attn.matmul_1.act_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_matmul_1' % (i)] = QConfig(input_scale=input_scale, output_scale=output_scale)
+        input_scale = params[f'blocks.{i}.attn.qact1.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.attn.matmul_1.act_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_matmul_1'] = QConfig(input_scale=input_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.attn.qact_attn1.act_scaling_factor' % (i)]
-        output_scale = params['blocks.%d.attn.int_softmax.act_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_softmax' % (i)] = QConfig(input_scale=input_scale, output_scale=output_scale)
+        input_scale = params[f'blocks.{i}.attn.qact_attn1.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.attn.int_softmax.act_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_softmax'] = QConfig(input_scale=input_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.attn.int_softmax.act_scaling_factor' % (i)]
-        output_scale = params['blocks.%d.attn.matmul_2.act_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_matmul_2' % (i)] = QConfig(input_scale=input_scale, output_scale=output_scale)
+        input_scale = params[f'blocks.{i}.attn.int_softmax.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.attn.matmul_2.act_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_matmul_2'] = QConfig(input_scale=input_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.attn.qact2.act_scaling_factor' % (i)]
-        kernel_scale = params['blocks.%d.attn.proj.fc_scaling_factor' % (i)]
+        input_scale = params[f'blocks.{i}.attn.qact2.act_scaling_factor']
+        kernel_scale = params[f'blocks.{i}.attn.proj.fc_scaling_factor']
         output_scale = input_scale * kernel_scale
-        QuantizeContext.qconfig_dict['block_%d_qconfig_proj' % (i)] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_proj'] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.attn.qact3.act_scaling_factor' % (i)]
-        output_scale = params['blocks.%d.qact2.act_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_add1' % (i)] = QConfig(input_scale=input_scale, input_dtype='int16', output_scale=output_scale)
+        input_scale = params[f'blocks.{i}.attn.qact3.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.qact2.act_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_add1'] = QConfig(input_scale=input_scale, input_dtype='int16', output_scale=output_scale)
 
-        input_scale = params['blocks.%d.qact2.act_scaling_factor' % (i)]
-        output_scale = params['blocks.%d.norm2.norm_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_norm2' % (i)] = QConfig(input_scale=input_scale, output_scale=output_scale)
+        input_scale = params[f'blocks.{i}.qact2.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.norm2.norm_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_norm2'] = QConfig(input_scale=input_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.qact3.act_scaling_factor' % (i)]
-        kernel_scale = params['blocks.%d.mlp.fc1.fc_scaling_factor' % (i)]
+        input_scale = params[f'blocks.{i}.qact3.act_scaling_factor']
+        kernel_scale = params[f'blocks.{i}.mlp.fc1.fc_scaling_factor']
         output_scale = input_scale * kernel_scale
-        QuantizeContext.qconfig_dict['block_%d_qconfig_fc1' % (i)] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_fc1'] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.mlp.qact_gelu.act_scaling_factor' % (i)]
-        output_scale = params['blocks.%d.mlp.act.act_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_gelu' % (i)] = QConfig(input_scale=input_scale, output_scale=output_scale, input_dtype='int8')
+        input_scale = params[f'blocks.{i}.mlp.qact_gelu.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.mlp.act.act_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_gelu'] = QConfig(input_scale=input_scale, output_scale=output_scale, input_dtype='int8')
 
-        input_scale = params['blocks.%d.mlp.qact1.act_scaling_factor' % (i)]
-        kernel_scale = params['blocks.%d.mlp.fc2.fc_scaling_factor' % (i)]
+        input_scale = params[f'blocks.{i}.mlp.qact1.act_scaling_factor']
+        kernel_scale = params[f'blocks.{i}.mlp.fc2.fc_scaling_factor']
         output_scale = input_scale * kernel_scale
-        QuantizeContext.qconfig_dict['block_%d_qconfig_fc2' % (i)] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_fc2'] = QConfig(input_scale=input_scale, kernel_scale=kernel_scale, output_scale=output_scale)
 
-        input_scale = params['blocks.%d.mlp.qact2.act_scaling_factor' % (i)]
-        output_scale = params['blocks.%d.qact4.act_scaling_factor' % (i)]
-        QuantizeContext.qconfig_dict['block_%d_qconfig_add2' % (i)] = QConfig(input_scale=input_scale, input_dtype='int16', output_scale=output_scale)
+        input_scale = params[f'blocks.{i}.mlp.qact2.act_scaling_factor']
+        output_scale = params[f'blocks.{i}.qact4.act_scaling_factor']
+        QuantizeContext.qconfig_dict[f'block_{i}_qconfig_add2'] = QConfig(input_scale=input_scale, input_dtype='int16', output_scale=output_scale)
 
     output_scale = params['norm.norm_scaling_factor']
     QuantizeContext.qconfig_dict['qconfig_norm'] = QConfig(input_scale=input_scale, output_scale=output_scale)
