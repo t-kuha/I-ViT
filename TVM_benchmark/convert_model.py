@@ -7,7 +7,7 @@ import torch
 from models.layers import QConfig, QuantizeContext
 
 
-def save_params(model, depth, save_path):
+def save_params(model, depth: int, save_path: str):
     # weight and bias (conv and dense)
     params = {}
     for (key, tensor) in model.items():
@@ -60,6 +60,7 @@ def save_params(model, depth, save_path):
     renamed_params['cls_token_weight'] = model['cls_token'].cpu().numpy()
     renamed_params['pos_embed_weight'] = model['pos_embed'].cpu().numpy()
 
+    os.makedirs(save_path, exist_ok=True)
     np.save(os.path.join(save_path, 'params.npy'), renamed_params)
 
 
@@ -145,17 +146,20 @@ def load_qconfig(model, depth):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='I-ViT convert model',
-                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--model-path', default='',
-                        help='saved checkpoint path in QAT (checkpoint.pth.tar)')
-    parser.add_argument('--params-path', default='',
-                        help='Saved parameters directory')
-    parser.add_argument('--depth', default=12,
-                        help='Depth of ViT')
+    parser = argparse.ArgumentParser(
+        description='I-ViT convert model',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        'params_path', type=str, help='Saved parameters directory'
+    )
+    parser.add_argument(
+        '--model-path', default='checkpoint.pth.tar', type=str,
+        help='saved checkpoint path in QAT (checkpoint.pth.tar)'
+    )
+    parser.add_argument('--depth', default=12, type=int, help='Depth of ViT')
 
     args = parser.parse_args()
     model = torch.load(args.model_path)
-    # print(model.keys())
 
     save_params(model, args.depth, args.params_path)
