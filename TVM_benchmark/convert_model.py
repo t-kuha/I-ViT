@@ -69,7 +69,7 @@ def load_qconfig(model, depth):
         if 'scaling_factor' in key:
             tensor_np = tensor.cpu().numpy().reshape((-1))
             params[key] = tensor_np
-        if "act_scaling_factor" in key and np.ndim(tensor_np) == 1:
+        if 'act_scaling_factor' in key and np.ndim(tensor_np) == 1:
             tensor_np = tensor_np[0]
             params[key] = tensor_np
 
