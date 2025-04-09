@@ -6,7 +6,9 @@ import torch
 from torch.autograd import Function
 
 
-def linear_quantize(input, scale, zero_point, is_weight):
+def linear_quantize(
+    input: torch.Tensor, scale: torch.Tensor, zero_point: torch.Tensor, is_weight: bool
+) -> torch.Tensor:
     """
     Quantize single-precision input tensor to integers with the given scaling factor and zeropoint.
     Parameters:
@@ -15,7 +17,6 @@ def linear_quantize(input, scale, zero_point, is_weight):
     scale: scaling factor for quantization
     zero_pint: shift for quantization
     """
-
     # reshape scale and zeropoint for convolutional weights and activation
     if is_weight:
         if len(input.shape) == 4:
@@ -41,7 +42,6 @@ def linear_quantize(input, scale, zero_point, is_weight):
         else:
             raise NotImplementedError
 
-    # quantized = float / scale + zero_point
     return torch.round(1. / scale * input + zero_point)
 
 
@@ -72,17 +72,17 @@ class SymmetricQuantFunction(Function):
     """
 
     @staticmethod
-    def forward(ctx, x, k, specified_scale, is_weight):
+    def forward(ctx, x: torch.Tensor, k: int, specified_scale: torch.Tensor, is_weight: bool) -> torch.Tensor:
         """
         x: floating point tensor to be quantized
         k: quantization bitwidth
         Note that the current implementation of SymmetricQuantFunction requires pre-calculated scaling factor.
         specified_scale: pre-calculated scaling factor for the tensor x
         """
-
         scale = specified_scale
 
-        zero_point = torch.tensor(0.).cuda() if torch.cuda.is_available() else torch.tensor(0.)
+        device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+        zero_point = torch.tensor(0.).to(device)
 
         n = 2 ** (k - 1) - 1
         new_quant_x = linear_quantize(x, scale, zero_point, is_weight=is_weight)
@@ -144,7 +144,7 @@ class round_ste(Function):
         return grad_output.clone()
 
 
-def batch_frexp(inputs, max_bit=31):
+def batch_frexp(inputs: torch.Tensor, max_bit: int = 31) -> torch.Tensor:
     """
     Decompose the scaling factor into mantissa and twos exponent.
     Parameters:
@@ -152,25 +152,38 @@ def batch_frexp(inputs, max_bit=31):
     inputs: scaling factor
     return: (mantissa, exponent)
     """
-
     shape_of_input = inputs.size()
+    device = inputs.device
 
     # trans the input to be a 1-d tensor
     inputs = inputs.view(-1)
 
-    output_m, output_e = np.frexp(inputs.cpu().numpy())
-    tmp_m = []
-    for m in output_m:
-        int_m_shifted = int(Decimal(m * (2 ** max_bit)).quantize(Decimal('1'),
-                                                                 rounding=decimal.ROUND_HALF_UP))
-        tmp_m.append(int_m_shifted)
-    output_m = np.array(tmp_m)
+    if False:
+        output_m, output_e = np.frexp(inputs.cpu().numpy())
+        tmp_m = []
+        for m in output_m:
+            int_m_shifted = int(Decimal(m * (2 ** max_bit)).quantize(Decimal('1'),
+                                                                    rounding=decimal.ROUND_HALF_UP))
+            tmp_m.append(int_m_shifted)
+        output_m = np.array(tmp_m)
 
-    output_e = float(max_bit) - output_e
-    if torch.cuda.is_available():
-        return torch.from_numpy(output_m).cuda().view(shape_of_input), torch.from_numpy(output_e).cuda().view(shape_of_input)
+        output_e = float(max_bit) - output_e.astype(np.float32)
+        device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+        return (
+            torch.from_numpy(output_m).to(device).view(shape_of_input),
+            torch.from_numpy(output_e).to(device).view(shape_of_input)
+        )
     else:
-        return torch.from_numpy(output_m).view(shape_of_input), torch.from_numpy(output_e).view(shape_of_input)
+        output_m, output_e = torch.frexp(inputs.cpu())
+        mantissa = torch.tensor([
+            int(Decimal(m.item()).quantize(Decimal('1'), rounding=decimal.ROUND_HALF_UP))
+            for m in output_m.numpy() * (2 ** max_bit)
+        ], dtype=torch.float32)
+
+        exponent = float(max_bit) - output_e
+        return (
+            mantissa.to(device).view(shape_of_input), exponent.to(device).view(shape_of_input)
+        )
 
 
 class fixedpoint_mul(Function):

@@ -60,7 +60,9 @@ class QuantLinear(nn.Linear):
     def unfix(self):
         pass
 
-    def forward(self, x, prev_act_scaling_factor=None):
+    def forward(
+        self, x: torch.Tensor, prev_act_scaling_factor: torch.Tensor = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         with torch.no_grad():
             w = self.weight
             if self.per_channel:
@@ -89,8 +91,10 @@ class QuantLinear(nn.Linear):
         prev_act_scaling_factor = prev_act_scaling_factor.view(1, -1)
         x_int = x / prev_act_scaling_factor
 
-        return F.linear(x_int, weight=self.weight_integer, bias=self.bias_integer) \
-               * bias_scaling_factor, bias_scaling_factor
+        return (
+            F.linear(x_int, weight=self.weight_integer, bias=self.bias_integer) * bias_scaling_factor,
+            bias_scaling_factor
+        )
 
 
 class QuantAct(nn.Module):
@@ -322,8 +326,10 @@ class QuantConv2d(nn.Conv2d):
         x_int = x / pre_act_scaling_factor
         correct_output_scale = bias_scaling_factor.view(1, -1, 1, 1)
 
-        return (F.conv2d(x_int, self.weight_integer, self.bias_integer, self.stride, self.padding,
-                         self.dilation, self.groups) * correct_output_scale, correct_output_scale)
+        return (
+            F.conv2d(x_int, self.weight_integer, self.bias_integer, self.stride, self.padding, self.dilation, self.groups) * correct_output_scale,
+            correct_output_scale
+        )
 
 
 class IntLayerNorm(nn.LayerNorm):

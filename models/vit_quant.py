@@ -243,7 +243,7 @@ class VisionTransformer(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward_features(self, x):
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         B = x.shape[0]
 
         x, act_scaling_factor = self.qact_input(x)
@@ -267,9 +267,9 @@ class VisionTransformer(nn.Module):
 
         return x, act_scaling_factor
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x, act_scaling_factor = self.forward_features(x)
-        x, act_scaling_factor = self.head(x, act_scaling_factor)
+        x, _ = self.head(x, act_scaling_factor)
         return x
 
 
