@@ -95,19 +95,19 @@ def quantized_conv2d(data,
     else:
         kernel_scale = relay.const(kernel_scale.astype('float32'), 'float32')
 
-    if kernel_layout == "OIHW":
+    if kernel_layout == 'OIHW':
         kernel_shape = (output_channels, input_channels, kernel_size[0], kernel_size[1])
-    elif kernel_layout == "HWIO":
+    elif kernel_layout == 'HWIO':
         kernel_shape = (kernel_size[0], kernel_size[1], input_channels, output_channels)
-    elif kernel_layout == "HWOI":
+    elif kernel_layout == 'HWOI':
         kernel_shape = (kernel_size[0], kernel_size[1], output_channels, input_channels)
-    elif kernel_layout == "OHWI":
+    elif kernel_layout == 'OHWI':
         kernel_shape = (output_channels, kernel_size[0], kernel_size[1], input_channels)
     else:
-        raise RuntimeError("Unsupported kernel layout {}".format(kernel_layout))
+        raise RuntimeError(f'Unsupported kernel layout {kernel_layout}')
 
     if weight is None:
-        weight = relay.var(name + "_weight", shape=kernel_shape, dtype=kernel_dtype)
+        weight = relay.var(f'{name}_weight', shape=kernel_shape, dtype=kernel_dtype)
 
     conv2d = relay.qnn.op.conv2d(data, weight, input_zero_point, kernel_zero_point, input_scale, kernel_scale,
                                 kernel_size=kernel_size, channels=output_channels, data_layout=data_layout, kernel_layout=kernel_layout, strides=strides, padding=padding, **kwargs)
@@ -122,9 +122,9 @@ def quantized_conv2d(data,
         elif data_layout == 'HWNC':
             bias_shape = (1, 1, 1, output_channels)
         else:
-            raise RuntimeError("Unsupported conv2d layout {}".format(data_layout))
+            raise RuntimeError(f'Unsupported conv2d layout {data_layout}')
 
-        bias = relay.var(name + "_bias", shape=bias_shape, dtype="int32")
+        bias = relay.var(f'{name}_bias', shape=bias_shape, dtype='int32')
         return relay.add(conv2d, bias)
     else:
         return conv2d
@@ -148,9 +148,9 @@ def requantize(data,
                output_scale=8.0,
                output_zero_point=0.0,
                axis=-1,
-               rounding="None",
-               compute_dtype="None",
-               out_dtype="int8"):
+               rounding='None',
+               compute_dtype='None',
+               out_dtype='int8'):
 
     if isinstance(input_scale, float):
         input_scale = relay.const(input_scale, 'float32')
@@ -238,7 +238,7 @@ def quantized_dense(data,
           input_zero_point=0.0,
           kernel_zero_point=0.0,
           add_bias=False,
-          out_dtype="int32"):
+          out_dtype='int32'):
     """Qnn Dense operator.
     Applies a quantized linear transformation
      .. math::
@@ -282,7 +282,7 @@ def quantized_dense(data,
     else:
         kernel_scale = relay.const(kernel_scale.astype('float32'), 'float32')
 
-    weight = relay.var(name + "_weight", shape=kernel_shape, dtype=kernel_dtype)
+    weight = relay.var(f'{name}_weight', shape=kernel_shape, dtype=kernel_dtype)
 
     dense = relay.qnn.op.dense(data,
                                weight,
@@ -293,7 +293,7 @@ def quantized_dense(data,
                                units,
                                out_dtype)
     if add_bias:
-        bias = relay.var(name + "_bias", dtype="int32")
+        bias = relay.var(f'{name}_bias', dtype='int32')
         return relay.nn.bias_add(dense, bias, axis=-1)
     else:
         return dense
@@ -320,7 +320,7 @@ def quantized_matmul(x, y,
                                        y_zero_point,
                                        x_scale,
                                        y_scale,
-                                       out_dtype="int32")
+                                       out_dtype='int32')
     return matmul
 
 

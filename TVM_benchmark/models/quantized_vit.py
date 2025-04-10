@@ -16,12 +16,12 @@ def Q_Block(data,
     shortcut = data
 
     # layer_norm
-    qconfig0 = layers.get_qconfig(name + '_qconfig_norm1')
-    norm1_bias = relay.var(name + '_norm1_bias', shape=[dim], dtype='int32')
+    qconfig0 = layers.get_qconfig(f'{name}_qconfig_norm1')
+    norm1_bias = relay.var(f'{name}_norm1_bias', shape=[dim], dtype='int32')
     norm1 = layers.quantized_layernorm(data, norm1_bias)
 
     # attention
-    qconfig1 = layers.get_qconfig(name + '_qconfig_qkv')
+    qconfig1 = layers.get_qconfig(f'{name}_qconfig_qkv')
     req1 = layers.requantize(norm1,
                              input_scale=qconfig0.output_scale,
                              output_scale=qconfig1.input_scale,
@@ -29,7 +29,7 @@ def Q_Block(data,
 
     req1 = relay.reshape(req1, [-3, 0])
     qkv = layers.quantized_dense(data=req1,
-                                  name=name + '_attn_qkv',
+                                  name=f'{name}_attn_qkv',
                                   input_scale=qconfig1.input_scale,
                                   kernel_scale=qconfig1.kernel_scale,
                                   units=dim * 3,
@@ -38,7 +38,7 @@ def Q_Block(data,
                                   add_bias=True)
     qkv = relay.reshape(qkv, [-4, batch_size, -1, -2])
 
-    qconfig2 = layers.get_qconfig(name + '_qconfig_matmul_1')
+    qconfig2 = layers.get_qconfig(f'{name}_qconfig_matmul_1')
     req2 = layers.requantize(qkv,
                              input_scale=qconfig1.output_scale,
                              output_scale=qconfig2.input_scale,
@@ -57,7 +57,7 @@ def Q_Block(data,
 
     attn = relay.reshape(attn, [-4, -1, num_heads, -2])
 
-    qconfig3 = layers.get_qconfig(name + '_qconfig_softmax')
+    qconfig3 = layers.get_qconfig(f'{name}_qconfig_softmax')
     req3 = layers.requantize(attn,
                              input_scale=qconfig2.output_scale * qk_scale,
                              output_scale=qconfig3.input_scale,
@@ -65,7 +65,7 @@ def Q_Block(data,
 
     attn = layers.quantized_softmax(req3, qconfig3.input_scale)
 
-    qconfig4 = layers.get_qconfig(name + '_qconfig_matmul_2')
+    qconfig4 = layers.get_qconfig(f'{name}_qconfig_matmul_2')
     attn = relay.reshape(attn, [-3, -2])
     v = relay.transpose(v, [0, 2, 1])
     attn = layers.quantized_matmul(attn, v,
@@ -77,7 +77,7 @@ def Q_Block(data,
     attn = relay.transpose(attn, [0, 2, 1, 3])
     attn = relay.reshape(attn, [0, 0, -1])
 
-    qconfig5 = layers.get_qconfig(name + '_qconfig_proj')
+    qconfig5 = layers.get_qconfig(f'{name}_qconfig_proj')
     req5 = layers.requantize(attn,
                              input_scale=qconfig4.output_scale,
                              output_scale=qconfig5.input_scale,
@@ -85,7 +85,7 @@ def Q_Block(data,
 
     req5 = relay.reshape(req5, [-3, 0])
     proj = layers.quantized_dense(data=req5,
-                                  name=name + '_attn_proj',
+                                  name=f'{name}_attn_proj',
                                   input_scale=qconfig5.input_scale,
                                   kernel_scale=qconfig5.kernel_scale,
                                   units=dim,
@@ -95,7 +95,7 @@ def Q_Block(data,
     proj = relay.reshape(proj, [-4, batch_size, -1, -2])
 
     # shortcut
-    qconfig6 = layers.get_qconfig(name + '_qconfig_add1')
+    qconfig6 = layers.get_qconfig(f'{name}_qconfig_add1')
     req6 = layers.requantize(proj,
                              input_scale=qconfig5.output_scale,
                              output_scale=qconfig6.input_scale,
@@ -110,12 +110,12 @@ def Q_Block(data,
     'MLP module'
     shortcut = add1
     # layer_norm
-    qconfig7 = layers.get_qconfig(name + '_qconfig_norm2')
-    norm2_bias = relay.var(name + '_norm2_bias', shape=[dim], dtype='int32')
+    qconfig7 = layers.get_qconfig(f'{name}_qconfig_norm2')
+    norm2_bias = relay.var(f'{name}_norm2_bias', shape=[dim], dtype='int32')
     norm2 = layers.quantized_layernorm(add1, norm2_bias)
 
     # dense
-    qconfig8 = layers.get_qconfig(name + '_qconfig_fc1')
+    qconfig8 = layers.get_qconfig(f'{name}_qconfig_fc1')
     req8 = layers.requantize(norm2,
                              input_scale=qconfig7.output_scale,
                              output_scale=qconfig8.input_scale,
@@ -123,7 +123,7 @@ def Q_Block(data,
 
     req8 = relay.reshape(req8, [-3, 0])
     fc1 = layers.quantized_dense(data=req8,
-                                 name=name + '_mlp_fc1',
+                                 name=f'{name}_mlp_fc1',
                                  input_scale=qconfig8.input_scale,
                                  kernel_scale=qconfig8.kernel_scale,
                                  units=mlp_ratio * dim,
@@ -132,7 +132,7 @@ def Q_Block(data,
                                  add_bias=True)
     fc1 = relay.reshape(fc1, [-4, batch_size, -1, -2])
 
-    qconfig9 = layers.get_qconfig(name + '_qconfig_gelu')
+    qconfig9 = layers.get_qconfig(f'{name}_qconfig_gelu')
     req9 = layers.requantize(fc1,
                              input_scale=qconfig8.output_scale,
                              output_scale=qconfig9.input_scale,
@@ -140,7 +140,7 @@ def Q_Block(data,
 
     act = layers.quantized_gelu(req9, qconfig9.input_scale)
 
-    qconfig10 = layers.get_qconfig(name + '_qconfig_fc2')
+    qconfig10 = layers.get_qconfig(f'{name}_qconfig_fc2')
     req10 = layers.requantize(act,
                               input_scale=qconfig9.output_scale,
                               output_scale=qconfig10.input_scale,
@@ -148,7 +148,7 @@ def Q_Block(data,
 
     req10 = relay.reshape(req10, [-3, 0])
     fc2 = layers.quantized_dense(data=req10,
-                                 name=name + '_mlp_fc2',
+                                 name=f'{name}_mlp_fc2',
                                  input_scale=qconfig10.input_scale,
                                  kernel_scale=qconfig10.kernel_scale,
                                  units=dim,
@@ -158,7 +158,7 @@ def Q_Block(data,
     fc2 = relay.reshape(fc2, [-4, batch_size, -1, -2])
 
     # shortcut
-    qconfig11 = layers.get_qconfig(name + '_qconfig_add2')
+    qconfig11 = layers.get_qconfig(f'{name}_qconfig_add2')
     req11 = layers.requantize(fc2,
                               input_scale=qconfig10.output_scale,
                               output_scale=qconfig11.input_scale,

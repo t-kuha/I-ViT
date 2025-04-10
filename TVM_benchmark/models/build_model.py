@@ -5,9 +5,9 @@ from .utils import QuantizeInitializer, create_workload
 def get_deit(name,
             batch_size,
             image_shape=(3, 224, 224),
-            dtype="int8",
-            data_layout="NCHW",
-            kernel_layout="OIHW",
+            dtype='int8',
+            data_layout='NCHW',
+            kernel_layout='OIHW',
             debug_unit=None):
 
     if data_layout == 'NCHW':
@@ -19,7 +19,7 @@ def get_deit(name,
     elif data_layout == 'HWNC':
         data_shape = (image_shape[1], image_shape[2], batch_size, image_shape[0])
     else:
-        raise RuntimeError("Unsupported data layout {}".format(data_layout))
+        raise RuntimeError(f'Unsupported data layout {data_layout}')
 
     if name == 'deit_tiny_patch16_224':
         embed_dim = 192
@@ -31,7 +31,7 @@ def get_deit(name,
         embed_dim = 768
         num_heads = 12
     else:
-        raise RuntimeError("Unsupported model {}".format(name))
+        raise RuntimeError(f'Unsupported model {name}')
 
     return Q_VisionTransformer(data_shape=data_shape,
                             dtype=dtype,
@@ -48,13 +48,13 @@ def get_deit(name,
 def get_workload(name,
                  batch_size=1,
                  image_shape=(3, 224, 224),
-                 dtype="int8",
-                 data_layout="NCHW",
-                 kernel_layout="OIHW",
+                 dtype='int8',
+                 data_layout='NCHW',
+                 kernel_layout='OIHW',
                  debug_unit=None):
 
     if batch_size != 1:
-        raise RuntimeError("The released project only supports batch_size = 1.")
+        raise RuntimeError('The released project only supports batch_size = 1.')
 
     net = get_deit(name,
                    batch_size,

@@ -60,14 +60,15 @@ class Initializer(object):
 
     def _init_weight(self, name, arr):
         """Abstract method to Initialize weight."""
-        raise NotImplementedError("Must override it")
+        raise NotImplementedError('Must override it')
 
     def _init_default(self, name, _):
         raise ValueError(
-            'Unknown initialization pattern for %s. '
+            f'Unknown initialization pattern for {name}. '
             'Default initialization is now limited to '
             '"weight", "bias", "gamma" (1.0), and "beta" (0.0).'
-            'Please use mx.sym.Variable(init=mx.init.*) to set initialization pattern' % name)
+            'Please use mx.sym.Variable(init=mx.init.*) to set initialization pattern'
+        )
 
 
 class Xavier(Initializer):
@@ -81,7 +82,7 @@ class Xavier(Initializer):
     magnitude: float, optional
         Scale of random number.
     """
-    def __init__(self, rnd_type="uniform", factor_type="avg", magnitude=3):
+    def __init__(self, rnd_type='uniform', factor_type='avg', magnitude=3):
         super(Xavier, self).__init__(rnd_type=rnd_type,
                                      factor_type=factor_type,
                                      magnitude=magnitude)
@@ -93,28 +94,29 @@ class Xavier(Initializer):
         shape = arr.shape
         hw_scale = 1.
         if len(shape) < 2:
-            raise ValueError('Xavier initializer cannot be applied to vector {0}. It requires at'
-                             ' least 2D.'.format(name))
+            raise ValueError(
+                f'Xavier initializer cannot be applied to vector {name}. It requires at least 2D.'
+            )
         if len(shape) > 2:
             hw_scale = np.prod(shape[2:])
         fan_in, fan_out = shape[1] * hw_scale, shape[0] * hw_scale
         factor = 1.
-        if self.factor_type == "avg":
+        if self.factor_type == 'avg':
             factor = (fan_in + fan_out) / 2.0
-        elif self.factor_type == "in":
+        elif self.factor_type == 'in':
             factor = fan_in
-        elif self.factor_type == "out":
+        elif self.factor_type == 'out':
             factor = fan_out
         else:
-            raise ValueError("Incorrect factor type")
+            raise ValueError('Incorrect factor type')
         # Hack for mobilenet, because there is less connectivity
-        if "depthwise" in name:
+        if 'depthwise' in name:
             factor = hw_scale
         scale = np.sqrt(self.magnitude / factor)
-        if self.rnd_type == "uniform":
+        if self.rnd_type == 'uniform':
             arr[:] = np.random.uniform(-scale, scale, size=arr.shape)
         else:
-            raise ValueError("Unknown random type")
+            raise ValueError('Unknown random type')
 
 
 class QuantizeInitializer(Initializer):
@@ -128,7 +130,7 @@ class QuantizeInitializer(Initializer):
         elif arr.dtype == np.int32:
             arr[:] = np.random.randint(-2**31, 2**31, size=arr.shape)
         else:
-            raise ValueError("Unknown random type %s" % (arr.dtype))
+            raise ValueError(f'Unknown random type {arr.dtype}')
 
     def _init_bias(self, name, arr):
         if arr.dtype == np.int32:
@@ -136,7 +138,7 @@ class QuantizeInitializer(Initializer):
         elif arr.dtype == np.float32:
             arr[:] = np.random.uniform(-1., 1., size=arr.shape)
         else:
-            raise ValueError("Unknown random type %s" % (arr.dtype))
+            raise ValueError(f'Unknown random type {arr.dtype}')
 
     def _init_scale(self, _, arr):
         arr[:] = np.random.randint(-256, 256, size=arr.shape)
@@ -165,12 +167,12 @@ def create_workload(net, initializer=None, seed=0):
     mod = tvm.IRModule.from_expr(net)
     mod = relay.transform.InferType()(mod)
     shape_dict = {
-        v.name_hint: v.checked_type for v in mod["main"].params}
+        v.name_hint: v.checked_type for v in mod['main'].params}
     np.random.seed(seed)
     initializer = initializer if initializer else Xavier()
     params = {}
     for k, v in shape_dict.items():
-        if k == "data":
+        if k == 'data':
             continue
 
         if v.dtype == 'int4' or v.dtype == 'uint4':
