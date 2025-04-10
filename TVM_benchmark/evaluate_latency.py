@@ -1,10 +1,7 @@
 import argparse
-import os
-from pathlib import Path
 
 import numpy as np
 import tvm
-import tvm.relay.testing
 from tvm import auto_scheduler, relay
 from tvm.contrib import graph_executor
 
@@ -38,14 +35,14 @@ def main():
     image_shape = (3, 224, 224)
     input_shape = (batch_size, 3, 224, 224)
     data_layout = 'NCHW'
-    kernel_layout = 'OIHW'
 
-    mod, params = build_model.get_workload(name=name,
-                                        batch_size=batch_size,
-                                        image_shape=image_shape,
-                                        dtype='int8',
-                                        data_layout=data_layout,
-                                        kernel_layout=kernel_layout)
+    mod, params = build_model.get_workload(
+        name=name,
+        batch_size=batch_size,
+        image_shape=image_shape,
+        dtype='int8',
+        data_layout=data_layout
+    )
 
     ###################################################################################
     print('Extract tasks...')

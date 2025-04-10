@@ -62,13 +62,13 @@ def main():
     batch_size = 1
     image_shape = (3, 224, 224)
     data_layout = 'NCHW'
-    kernel_layout = 'OIHW'
-    func, params = build_model.get_workload(name=name,
-                                            batch_size=batch_size,
-                                            image_shape=image_shape,
-                                            dtype='int8',
-                                            data_layout=data_layout,
-                                            kernel_layout=kernel_layout)
+    func, _ = build_model.get_workload(
+        name=name,
+        batch_size=batch_size,
+        image_shape=image_shape,
+        dtype='int8',
+        data_layout=data_layout
+    )
 
     # Build model
     pretrained_params = {**pretrained_params}
