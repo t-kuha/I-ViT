@@ -24,20 +24,20 @@ def save_params(model, depth: int, save_path: str):
 
     for i in range(depth):
         for key in ['weight_integer', 'bias_integer']:
-            old_name = f'blocks.{i}.attn.qkv.' + key
-            new_name = f'block_{i}_attn_qkv_' + key[:-8]
+            old_name = f'blocks.{i}.attn.qkv.{key}'
+            new_name = f'block_{i}_attn_qkv_.{key[:-8]}'
             renamed_params[new_name] = params[old_name]
 
-            old_name = f'blocks.{i}.attn.proj.' + key
-            new_name = f'block_{i}_attn_proj_' + key[:-8]
+            old_name = f'blocks.{i}.attn.proj.{key}'
+            new_name = f'block_{i}_attn_proj_.{key[:-8]}'
             renamed_params[new_name] = params[old_name]
 
-            old_name = f'blocks.{i}.mlp.fc1.' + key
-            new_name = f'block_{i}_mlp_fc1_' + key[:-8]
+            old_name = f'blocks.{i}.mlp.fc1.{key}'
+            new_name = f'block_{i}_mlp_fc1_.{key[:-8]}'
             renamed_params[new_name] = params[old_name]
 
-            old_name = f'blocks.{i}.mlp.fc2.' + key
-            new_name = f'block_{i}_mlp_fc2_' + key[:-8]
+            old_name = f'blocks.{i}.mlp.fc2.{key}'
+            new_name = f'block_{i}_mlp_fc2_.{key[:-8]}'
             renamed_params[new_name] = params[old_name]
 
     renamed_params['head_weight'] = params['head.weight_integer']
@@ -46,12 +46,12 @@ def save_params(model, depth: int, save_path: str):
     # norm
     for i in range(depth):
         for key in ['bias_integer']:
-            old_name = f'blocks.{i}.norm1.' + key
-            new_name = f'block_{i}_norm1_' + key[:-8]
+            old_name = f'blocks.{i}.norm1.{key}'
+            new_name = f'block_{i}_norm1_.{key[:-8]}'
             renamed_params[new_name] = model[old_name].cpu().numpy().astype('int32')
 
-            old_name = f'blocks.{i}.norm2.' + key
-            new_name = f'block_{i}_norm2_' + key[:-8]
+            old_name = f'blocks.{i}.norm2.{key}'
+            new_name = f'block_{i}_norm2_.{key[:-8]}'
             renamed_params[new_name] = model[old_name].cpu().numpy().astype('int32')
 
     renamed_params['norm_bias'] = model['norm.bias_integer'].cpu().numpy().astype('int32')

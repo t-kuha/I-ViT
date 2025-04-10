@@ -12,17 +12,17 @@ from tvm.contrib.download import download_testdata
 import models.build_model as build_model
 from models.layers import QuantizeContext
 
-parser = argparse.ArgumentParser(description="TVM-Accuracy")
+parser = argparse.ArgumentParser(description='TVM-Accuracy')
 
-parser.add_argument("--model-name", default='deit_tiny_patch16_224',
+parser.add_argument('--model-name', default='deit_tiny_patch16_224',
                     choices=['deit_tiny_patch16_224',
                              'deit_small_patch16_224',
                              'deit_base_patch16_224'],
-                    help="model fullname")
-parser.add_argument("--model-path", default='',
-                    help="saved checkpoint path in QAT (checkpoint.pth.tar)")
-parser.add_argument("--params-path", default='',
-                    help="saved parameters path in convert_model.py (params.npy)")
+                    help='model fullname')
+parser.add_argument('--model-path', default='',
+                    help='saved checkpoint path in QAT (checkpoint.pth.tar)')
+parser.add_argument('--params-path', default='',
+                    help='saved parameters path in convert_model.py (params.npy)')
 
 
 def main():
@@ -38,8 +38,8 @@ def main():
     convert_model.load_qconfig(model, depth)
 
     # Classic cat example!
-    img_url = "https://github.com/dmlc/mxnet.js/blob/main/data/cat.png?raw=true"
-    img_path = download_testdata(img_url, "cat.png", module="data")
+    img_url = 'https://github.com/dmlc/mxnet.js/blob/main/data/cat.png?raw=true'
+    img_path = download_testdata(img_url, 'cat.png', module='data')
     img = Image.open(img_path).resize((224, 224))
     # Preprocess the image and convert to tensor
     my_preprocess = transforms.Compose(
@@ -55,18 +55,18 @@ def main():
     input_image = input_image / QuantizeContext.qconfig_dict['qconfig_embed_conv'].input_scale
     input_image = np.clip(input_image, -128, 127)
     input_image = np.round(input_image)
-    input_image = input_image.astype("int8")
+    input_image = input_image.astype('int8')
 
     # Load model
     name = args.model_name
     batch_size = 1
     image_shape = (3, 224, 224)
-    data_layout = "NCHW"
-    kernel_layout = "OIHW"
+    data_layout = 'NCHW'
+    kernel_layout = 'OIHW'
     func, params = build_model.get_workload(name=name,
                                             batch_size=batch_size,
                                             image_shape=image_shape,
-                                            dtype="int8",
+                                            dtype='int8',
                                             data_layout=data_layout,
                                             kernel_layout=kernel_layout)
 
@@ -75,7 +75,7 @@ def main():
     with tvm.transform.PassContext(opt_level=3):
         lib = relay.build(func, target=target, params=pretrained_params)
 
-    runtime = tvm.contrib.graph_executor.GraphModule(lib["default"](tvm.device(target, 0)))
+    runtime = tvm.contrib.graph_executor.GraphModule(lib['default'](tvm.device(target, 0)))
 
     # Run model
     input_data = np.repeat(input_image, batch_size, axis=0)
@@ -85,8 +85,8 @@ def main():
     tvm_result = runtime.get_output(0).numpy()
 
     tvm_top1_labels = np.argsort(tvm_result[0])[::-1][:5]
-    print("TVM top1 labels:", tvm_top1_labels)
+    print('TVM top1 labels:', tvm_top1_labels)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
